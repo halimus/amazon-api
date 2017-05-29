@@ -1,2 +1,2 @@
-# amazon-api
-Amazon Product Advertising API
+# Amazon Product Advertising API
+
