@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Amazon Product Advertising API</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+        <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+        <script type="text/javascript">
+            $(function () {
+                /*
+                 * Load Data
+                 */
+                $("#display").load(load_data());
+
+                function load_data() {
+                    $.ajax({
+                        dataType: 'JSON',
+                        type: 'GET',
+                        url: 'aws.php?action=get_data',
+                        beforeSend: function () {
+                            console.log('load');
+                        },
+                        success: function (data) {
+                            var item = '';
+                            $.each(data, function (i, product) {
+                                item += '<label>ASIN:</label> ' + product.ASIN + '<br>';
+                                item += '<label>Title:</label> ' + product.Title + '<br>';
+                                item += '<label>MPN:</label> ' + product.MPN + '<br>';
+                                item += '<label>Price:</label> ' + product.Price + '<br><br>';
+                            });
+                            $('#display').html(item);
+                        },
+                        error: function () {
+                            console.log('load errors');
+                        }
+                    });
+                }
+
+                /*
+                 * Submit search form
+                 */
+                $(document).on('submit', '#form1', function () {
+                    var keyword = $('#keyword').val();
+                    if (keyword !== '') {
+                        $.ajax({
+                            type: "POST",
+                            url: 'aws.php?action=search_data',
+                            data: {'keyword': keyword},
+                            dataType: 'JSON',
+                            beforeSend: function () {
+                                $('#loader').show();
+                            },
+                            success: function (data) {
+                                $('#loader').hide();
+                                $('#asin').val(data.ASIN[0]);
+                                $('#title').val(data.Title[0]);
+                                $('#mpn').val(data.MPN[0]);
+                                $('#price').val(data.Price[0]);
+                            },
+                            error: function () {
+                                $('#loader').hide();
+                                alert('There is some errors!');
+                            }
+                        });
+                    } else {
+                        alert('Keyword must not be empty!');
+                    }
+                    return false;
+                });
+
+                /*
+                 * Insert Data to database
+                 */
+                $(document).on('submit', '#form2', function () {
+                    var form = $("#form2");
+                    var asin = $('#asin').val();
+                    if(asin!=''){
+                        $.ajax({
+                            type: "POST",
+                            url: 'aws.php?action=insert_data',
+                            data: form.serialize(),
+                            dataType: 'JSON',
+                            beforeSend: function () {
+
+                            },
+                            success: function (response) {
+                                if (response['error'] == '') {
+                                    $('#form2').trigger("reset");
+                                    $('#form1').trigger("reset");
+                                    load_data();
+                                    $('#keyword').focus();
+                                } else {
+                                    alert(response['error']);
+                                }
+                            },
+                            error: function () {
+                            }
+                        });
+                    }
+                    else{
+                        alert('The ASIN must not be empty!');
+                    }
+                    return false;
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <div class="container" style="margin-top: 50px">
+            <div class="row">
+                <div class="col-md-6" id="display">
+                </div><!--/column1-->
+				
+                <div class="col-md-6">
+                    <form method="post" action="" id="form1">
+                        <label>Keywords:</label>
+                        <input type="text" name="keyword" id="keyword" class="form-control" value="" placeholder="Example: xbox, xbox360, dell xps, iphone 7,..."><br>
+                        <button type="submit" class="btn btn-primary" id="search">Submit</button>
+                        <i class="fa-li fa fa-2x fa-spinner fa-spin" id="loader" style="position: absolute; margin-left:140px; margin-top:78px; display:none;"></i> 
+                    </form>
+
+                    <div id="result" style="">
+                        <hr>
+                        <h3>Result:</h3>
+                        <form method="post" action="" id="form2">
+                            <label>ASIN</label>
+                            <input type="text" name="asin" id="asin" class="form-control" value="" placeholder="" readonly>
+                            <label>Title</label>
+                            <input type="text" name="title" id="title" class="form-control" value="" placeholder="" readonly>
+                            <label>MPN</label>
+                            <input type="text" name="mpn" id="mpn" class="form-control" value="" placeholder="" readonly>
+                            <label>Price</label>
+                            <input type="text" name="price" id="price" class="form-control" value="" placeholder="" readonly><br>
+                            <button type="submit" class="btn btn-success" id="insert">Insert to DB</button>
+                        </form>
+                    </div>
+                </div><!--/column2-->
+				
+            </div>
+        </div><!--/container -->
+		
+    </body>
+</html>
